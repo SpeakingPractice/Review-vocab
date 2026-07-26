@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "lessons": {
+      "title": "Lessons",
+      "description": "Shared lesson sets created by users",
+      "properties": {
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "isPreMade": { "type": "boolean" },
+        "createdAt": { "type": "number" },
+        "authorId": { "type": "string" }
+      },
+      "required": ["title", "category", "createdAt"]
+    }
+  },
+  "security": {
+    "lessons": {
+      "read": "true",
+      "write": "request.auth != null"
+    }
+  }
+}

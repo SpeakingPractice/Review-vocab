@@ -15,7 +15,9 @@ import {
   Wand2,
   ArrowLeft,
   MessageSquare,
-  MoveHorizontal
+  ListFilter,
+  X,
+  Pencil
 } from 'lucide-react';
 import { LessonSet, GameHistoryRecord } from '../types';
 import { sound } from '../utils/sound';
@@ -35,6 +37,7 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
   // Game state: blankId -> user chosen string
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [activeBlankModal, setActiveBlankModal] = useState<string | null>(null);
   
   // Available option pool (shuffled)
   const [optionPool, setOptionPool] = useState<string[]>([]);
@@ -66,6 +69,7 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
   const resetGame = () => {
     setUserAnswers({});
     setSelectedOption(null);
+    setActiveBlankModal(null);
     setIsSubmitted(false);
     setScore(0);
     setTimeSpent(0);
@@ -138,7 +142,7 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
 
   const handleBlankSlotClick = (blankId: string) => {
     if (isSubmitted) return;
-
+    sound.playClick();
     if (selectedOption) {
       setUserAnswers(prev => ({
         ...prev,
@@ -146,14 +150,8 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
       }));
       sound.playSnap();
       setSelectedOption(null);
-    } else if (userAnswers[blankId]) {
-      // Clear slot on click
-      sound.playClick();
-      setUserAnswers(prev => {
-        const copy = { ...prev };
-        delete copy[blankId];
-        return copy;
-      });
+    } else {
+      setActiveBlankModal(blankId);
     }
   };
 
@@ -306,8 +304,9 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
           <div>
             Đã điền: <span className="font-bold text-emerald-600">{filledCount}</span> / {totalBlanks} ô trống
           </div>
-          <div className="text-slate-500">
-            Mẹo: Kéo thả từ trực tiếp HOẶC bấm chọn từ rồi bấm chọn ô trống
+          <div className="text-slate-500 font-medium flex items-center gap-1">
+            <ListFilter className="w-3.5 h-3.5 text-indigo-600" />
+            Mẹo: Bấm trực tiếp vào ô trống để bật Pop-up chọn đáp án đánh số thứ tự
           </div>
         </div>
       </div>
@@ -367,22 +366,24 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, blankId)}
                       onClick={() => handleBlankSlotClick(blankId)}
-                      className={`inline-flex items-center justify-center mx-1.5 px-3.5 py-1 rounded-xl text-sm transition-all duration-150 cursor-pointer min-w-[120px] min-h-[36px] ${slotStyles}`}
+                      className={`inline-flex items-center justify-center mx-1.5 px-3.5 py-1 rounded-xl text-xs sm:text-sm transition-all duration-150 cursor-pointer min-w-[120px] min-h-[36px] ${slotStyles}`}
                     >
                       {userVal ? (
-                        <span className="flex items-center gap-1.5 font-mono">
+                        <span className="flex items-center gap-1.5 font-mono text-xs font-semibold">
                           {userVal}
-                          {isSubmitted && (
+                          {isSubmitted ? (
                             userVal?.toLowerCase().trim() === blankObj?.correctAnswer.toLowerCase().trim() ? (
                               <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
                             ) : (
                               <XCircle className="w-4 h-4 text-rose-200 shrink-0" />
                             )
+                          ) : (
+                            <Pencil className="w-3.5 h-3.5 text-indigo-200 hover:text-white shrink-0 ml-0.5" />
                           )}
                         </span>
                       ) : (
-                        <span className="text-xs text-indigo-400 font-medium italic flex items-center gap-1">
-                          <MoveHorizontal className="w-3.5 h-3.5 opacity-60" /> Ô trống
+                        <span className="text-xs text-indigo-500 font-medium italic flex items-center gap-1">
+                          <ListFilter className="w-3.5 h-3.5 text-indigo-500 shrink-0" /> Bấm chọn đáp án
                         </span>
                       )}
                     </span>
@@ -400,7 +401,7 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
           <div className="flex items-center justify-between mb-3 px-1">
             <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-indigo-600" />
-              Danh Sách Đáp Án Có Sẵn ({availableOptions.length} lựa chọn)
+              Danh Sách Đáp Án Có Sẵn ({optionPool.length} từ/cụm từ)
             </h3>
             {selectedOption && (
               <span className="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2.5 py-1 rounded-lg">
@@ -409,26 +410,32 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2.5 min-h-[60px] p-3 rounded-2xl bg-slate-50 border border-slate-200/60 items-center">
-            {availableOptions.length === 0 ? (
+          <div className="flex flex-wrap gap-2 min-h-[60px] p-3 rounded-2xl bg-slate-50 border border-slate-200/60 items-center">
+            {optionPool.length === 0 ? (
               <p className="text-xs text-slate-400 italic w-full text-center">
-                Tất cả các từ đã được điền vào đoạn hội thoại! Bấm "Kiểm Tra Đáp Án" bên dưới.
+                Chưa có đáp án nào.
               </p>
             ) : (
-              availableOptions.map((opt, idx) => {
+              optionPool.map((opt, idx) => {
                 const isSelected = selectedOption === opt;
+                const isUsed = Object.values(userAnswers).includes(opt);
                 return (
                   <button
                     key={`${opt}-${idx}`}
                     draggable
                     onDragStart={(e) => handleDragStart(e, opt)}
                     onClick={() => handleOptionClick(opt)}
-                    className={`px-4 py-2 rounded-xl text-sm font-semibold font-mono border shadow-sm transition-all duration-150 cursor-grab active:cursor-grabbing ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold font-mono border shadow-sm transition-all duration-150 flex items-center gap-1.5 ${
                       isSelected
                         ? 'border-indigo-600 bg-indigo-600 text-white scale-105 shadow-md'
+                        : isUsed
+                        ? 'border-slate-200 bg-slate-100 text-slate-400'
                         : 'border-slate-200 bg-white text-slate-800 hover:border-indigo-400 hover:bg-indigo-50/50'
                     }`}
                   >
+                    <span className="text-[10px] px-1.5 py-0.2 bg-slate-200/60 rounded text-slate-600 font-bold">
+                      {idx + 1}
+                    </span>
                     {opt}
                   </button>
                 );
@@ -437,6 +444,135 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
           </div>
         </div>
       )}
+
+      {/* Pop-Up Modal for Selecting Option */}
+      <AnimatePresence>
+        {activeBlankModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full p-5 sm:p-6 flex flex-col max-h-[85vh] overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0">
+                    <ListFilter className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-base">
+                      Chọn Đáp Án Cho Ô Trống
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Lướt lên/xuống để xem danh sách đáp án đánh số thứ tự
+                    </p>
+                  </div>
+                </div>
+                <button
+                  id="btn-close-blank-modal"
+                  onClick={() => setActiveBlankModal(null)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body: Scrollable list of numbered options */}
+              <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[380px] custom-scrollbar">
+                {optionPool.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic text-center py-6">
+                    Không có đáp án nào trong danh sách.
+                  </p>
+                ) : (
+                  optionPool.map((optText, idx) => {
+                    const isSelectedInThisBlank = userAnswers[activeBlankModal] === optText;
+                    const isUsedInOtherBlank = Object.entries(userAnswers).some(
+                      ([bId, val]) => bId !== activeBlankModal && val === optText
+                    );
+
+                    return (
+                      <button
+                        key={`${optText}-${idx}`}
+                        id={`btn-modal-opt-${idx + 1}`}
+                        onClick={() => {
+                          sound.playSnap();
+                          setUserAnswers(prev => ({
+                            ...prev,
+                            [activeBlankModal]: optText
+                          }));
+                          setActiveBlankModal(null);
+                        }}
+                        className={`w-full text-left p-3 rounded-2xl border flex items-center justify-between gap-3 transition-all ${
+                          isSelectedInThisBlank
+                            ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
+                            : 'border-slate-200/80 bg-white hover:border-indigo-400 hover:bg-indigo-50/50 text-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <span className={`shrink-0 w-6 h-6 rounded-lg text-xs font-bold font-mono flex items-center justify-center border ${
+                            isSelectedInThisBlank
+                              ? 'bg-white/20 text-white border-white/30'
+                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <span className={`text-xs font-mono font-medium leading-relaxed break-words ${
+                            isSelectedInThisBlank ? 'text-white font-semibold' : 'text-slate-800'
+                          }`}>
+                            {optText}
+                          </span>
+                        </div>
+
+                        {isSelectedInThisBlank && (
+                          <span className="shrink-0 text-[10px] font-bold bg-white/20 text-white px-2.5 py-1 rounded-lg">
+                            Đã chọn
+                          </span>
+                        )}
+                        {!isSelectedInThisBlank && isUsedInOtherBlank && (
+                          <span className="shrink-0 text-[10px] font-medium bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg">
+                            Đã điền ô khác
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between gap-3 shrink-0">
+                {userAnswers[activeBlankModal] ? (
+                  <button
+                    id="btn-modal-clear-answer"
+                    onClick={() => {
+                      sound.playClick();
+                      setUserAnswers(prev => {
+                        const copy = { ...prev };
+                        delete copy[activeBlankModal];
+                        return copy;
+                      });
+                      setActiveBlankModal(null);
+                    }}
+                    className="px-3.5 py-2 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-semibold transition-colors"
+                  >
+                    Bỏ chọn ô này
+                  </button>
+                ) : <div />}
+
+                <button
+                  id="btn-modal-cancel"
+                  onClick={() => setActiveBlankModal(null)}
+                  className="px-5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-semibold transition-colors"
+                >
+                  Đóng
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Action Submit */}
       <div className="flex justify-center mb-8">

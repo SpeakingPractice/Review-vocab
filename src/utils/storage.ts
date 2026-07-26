@@ -1,5 +1,6 @@
 import { GameHistoryRecord, LessonSet, UserStats, DialogueBlank } from '../types';
 import { SAMPLE_LESSONS } from '../data/sampleLessons';
+import { saveLessonToCloud, deleteLessonFromCloud, subscribeToLessons, mergeLessonsWithSamples } from './firebase';
 
 const LESSONS_KEY = 'vocab_review_lessons_v1';
 const HISTORY_KEY = 'vocab_review_history_v1';
@@ -13,35 +14,22 @@ export function getStoredLessons(): LessonSet[] {
       return SAMPLE_LESSONS;
     }
     const parsed: LessonSet[] = JSON.parse(data);
-    // Ensure sample lessons exist if missing
-    const ids = new Set(parsed.map(l => l.id));
-    const merged = [...parsed];
-    SAMPLE_LESSONS.forEach(sample => {
-      if (!ids.has(sample.id)) {
-        merged.unshift(sample);
-      }
-    });
-    return merged;
+    return mergeLessonsWithSamples(parsed);
   } catch {
     return SAMPLE_LESSONS;
   }
 }
 
 export function saveLessonSet(lesson: LessonSet): void {
-  const current = getStoredLessons();
-  const index = current.findIndex(l => l.id === lesson.id);
-  if (index >= 0) {
-    current[index] = lesson;
-  } else {
-    current.unshift(lesson);
-  }
-  localStorage.setItem(LESSONS_KEY, JSON.stringify(current));
+  saveLessonToCloud(lesson);
 }
 
 export function deleteLessonSet(id: string): void {
-  const current = getStoredLessons().filter(l => l.id !== id && !l.isPreMade);
-  localStorage.setItem(LESSONS_KEY, JSON.stringify(current));
+  deleteLessonFromCloud(id);
 }
+
+export { subscribeToLessons };
+
 
 // History Records
 export function getStoredHistory(): GameHistoryRecord[] {

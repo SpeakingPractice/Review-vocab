@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LessonSet } from './types';
-import { getStoredLessons } from './utils/storage';
+import { getStoredLessons, subscribeToLessons } from './utils/storage';
 import { Navbar, TabType } from './components/Navbar';
 import { LessonList } from './components/LessonList';
 import { MatchingGame } from './components/MatchingGame';
@@ -10,13 +10,28 @@ import { HistoryStats } from './components/HistoryStats';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('lessons');
-  const [lessons, setLessons] = useState<LessonSet[]>([]);
+  const [lessons, setLessons] = useState<LessonSet[]>(() => getStoredLessons());
   const [selectedLesson, setSelectedLesson] = useState<LessonSet | null>(null);
   const [editingLesson, setEditingLesson] = useState<LessonSet | null>(null);
 
-  // Load stored lessons on mount
+  // Subscribe to real-time lessons from Firebase Firestore
   useEffect(() => {
-    refreshLessons();
+    const unsubscribe = subscribeToLessons((updatedLessons) => {
+      setLessons(updatedLessons);
+
+      setSelectedLesson((prevSelected) => {
+        if (!prevSelected && updatedLessons.length > 0) {
+          return updatedLessons[0];
+        }
+        if (prevSelected) {
+          const match = updatedLessons.find(l => l.id === prevSelected.id);
+          return match || prevSelected;
+        }
+        return null;
+      });
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const refreshLessons = () => {
@@ -26,6 +41,7 @@ export default function App() {
       setSelectedLesson(list[0]);
     }
   };
+
 
   const handleSelectLesson = (lesson: LessonSet, mode: 'matching' | 'dialogue') => {
     setSelectedLesson(lesson);

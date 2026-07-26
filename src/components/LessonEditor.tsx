@@ -321,30 +321,32 @@ Candidate: It matters a lot. I always look for a place with a [cozy ambience] wh
               </h3>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Ô 3: Nhập Kịch Bản Dialogue (Đặt từ cần điền vào trong ngoặc vuông `[từ_cần_điền]`)
-              </label>
-              <textarea
-                rows={5}
-                value={dialogueText}
-                onChange={e => setDialogueText(e.target.value)}
-                placeholder="Speaker A: Hello, I want to [check in].&#10;Speaker B: Welcome, do you have a reservation?"
-                className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-mono leading-relaxed"
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Ô 3: Nhập Kịch Bản Dialogue (Đặt từ cần điền vào `[từ_cần_điền]`)
+                </label>
+                <textarea
+                  rows={6}
+                  value={dialogueText}
+                  onChange={e => setDialogueText(e.target.value)}
+                  placeholder="Speaker A: Hello, I want to [check in].&#10;Speaker B: Welcome, do you have a reservation?"
+                  className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-mono leading-relaxed"
+                />
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Ô 4: Nhập Danh Sách Đáp Án / Các Đáp Án Ngẫu Nhiên (Cách nhau bởi dấu phẩy hoặc xuống dòng)
-              </label>
-              <textarea
-                rows={3}
-                value={answersText}
-                onChange={e => setAnswersText(e.target.value)}
-                placeholder="check in, check out, room upgrade, late checkout"
-                className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-mono leading-relaxed"
-              />
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Ô 4: Nhập Danh Sách Đáp Án Có Sẵn (Dấu phẩy hoặc xuống dòng)
+                </label>
+                <textarea
+                  rows={6}
+                  value={answersText}
+                  onChange={e => setAnswersText(e.target.value)}
+                  placeholder="check in, check out, room upgrade, late checkout"
+                  className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-mono leading-relaxed"
+                />
+              </div>
             </div>
           </div>
 
