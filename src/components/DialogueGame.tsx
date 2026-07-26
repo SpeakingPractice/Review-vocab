@@ -72,14 +72,23 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
     setTimerActive(true);
     setShowExplanation(false);
 
-    // Collect all options from blanks or rawAnswers
+    // Collect options strictly based on user input (rawAnswers or blanks)
     const blanksList = Object.values(lesson.dialogueBlanks) as Array<{ correctAnswer: string }>;
     const allCorrectAnswers = blanksList.map((b) => b.correctAnswer);
-    const extraDistractors = lesson.rawAnswers || [];
-    
-    // Combine and shuffle unique options
-    const combined = Array.from(new Set([...allCorrectAnswers, ...extraDistractors]));
-    setOptionPool(shuffleArray(combined));
+    const rawAnswersList = lesson.rawAnswers || [];
+
+    let pool: string[];
+    if (rawAnswersList.length > 0) {
+      // Use exact list provided in rawAnswers. If any blank answer was omitted from rawAnswers, append it to avoid broken blanks.
+      const missingCorrect = allCorrectAnswers.filter(
+        ans => !rawAnswersList.some(r => r.trim().toLowerCase() === ans.trim().toLowerCase())
+      );
+      pool = [...rawAnswersList, ...missingCorrect];
+    } else {
+      pool = allCorrectAnswers;
+    }
+
+    setOptionPool(shuffleArray(pool));
   };
 
   // Remaining unused options

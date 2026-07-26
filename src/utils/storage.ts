@@ -141,10 +141,17 @@ export function parseRawInputsToLesson(
     };
   });
 
-  // Parse raw answers
-  const rawAnswers = answersText.split('\n').flatMap(line => 
-    line.split(',').map(a => a.trim()).filter(Boolean)
-  );
+  // Parse raw answers cleanly without modifying entries
+  const rawAnswers = answersText
+    .split('\n')
+    .flatMap(line => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) return [];
+      if (trimmedLine.includes(',')) {
+        return trimmedLine.split(',').map(a => a.trim()).filter(Boolean);
+      }
+      return [trimmedLine];
+    });
 
   // Parse dialogue lines and extract [blank] placeholders
   const dialogueRawLines = dialogueText.split('\n').filter(l => l.trim().length > 0);
@@ -180,17 +187,13 @@ export function parseRawInputsToLesson(
         correctAnswer = rawAnswers[blankCounter - 2] || 'answer';
       }
 
-      // Generate distractor options from other raw answers
-      const distractorOptions = Array.from(new Set([...rawAnswers, 'option A', 'option B']))
-        .filter(opt => opt !== correctAnswer)
-        .slice(0, 3);
-      
-      const allOptions = shuffleArray([correctAnswer, ...distractorOptions]);
+      // Build options purely from user input (rawAnswers or correctAnswer) without adding dummy options
+      const blankOptions = Array.from(new Set([correctAnswer, ...rawAnswers]));
 
       dialogueBlanks[blankKey] = {
         id: blankKey,
         correctAnswer: correctAnswer,
-        options: allOptions,
+        options: shuffleArray(blankOptions),
         explanation: `Từ/Cụm từ đúng trong ngữ cảnh này là "${correctAnswer}".`
       };
 
