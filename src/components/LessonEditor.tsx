@@ -16,46 +16,99 @@ import { parseRawInputsToLesson, saveLessonSet } from '../utils/storage';
 import { sound } from '../utils/sound';
 
 interface LessonEditorProps {
+  initialLesson?: LessonSet | null;
   onSaveSuccess: (lesson: LessonSet) => void;
   onCancel: () => void;
 }
 
+const DEFAULT_SITUATIONS = `Yêu cầu giúp đỡ khi bị lạc đường
+Xin lỗi vì không thể tham gia buổi tiệc
+Hỏi thông tin về giá phòng khách sạn
+Đề xuất thay đổi lịch hẹn sang ngày khác`;
+
+const DEFAULT_PHRASES = `ask for directions
+decline an invitation
+inquire about room rates
+reschedule an appointment`;
+
+const DEFAULT_DIALOGUE = `Customer: Good morning! I would like to [inquire about room rates] for next weekend.
+Receptionist: Sure! Our standard room is $80/night. Would you like to make a reservation?
+Customer: Thank you, but I need to [reschedule an appointment] first with my client before confirming.
+Receptionist: No problem! Feel free to call us whenever you are ready.`;
+
+const DEFAULT_ANSWERS = `inquire about room rates, reschedule an appointment, ask for directions, decline an invitation, order food, pay by card`;
+
+function getInitialDialogueText(lesson: LessonSet): string {
+  let text = lesson.rawDialogue || '';
+  if (text && lesson.dialogueBlanks) {
+    Object.entries(lesson.dialogueBlanks).forEach(([blankKey, blankObj]) => {
+      if (blankObj?.correctAnswer) {
+        text = text.replace(new RegExp(`\\[${blankKey}\\]`, 'g'), `[${blankObj.correctAnswer}]`);
+      }
+    });
+    return text;
+  }
+
+  if (lesson.dialogueItems && lesson.dialogueItems.length > 0) {
+    return lesson.dialogueItems.map(item => {
+      let lineText = item.textWithBlanks;
+      if (lesson.dialogueBlanks) {
+        item.blankIds.forEach(blankKey => {
+          const blankObj = lesson.dialogueBlanks[blankKey];
+          if (blankObj?.correctAnswer) {
+            lineText = lineText.replace(`[${blankKey}]`, `[${blankObj.correctAnswer}]`);
+          }
+        });
+      }
+      return `${item.speaker}: ${lineText}`;
+    }).join('\n');
+  }
+
+  return '';
+}
+
 export const LessonEditor: React.FC<LessonEditorProps> = ({
+  initialLesson,
   onSaveSuccess,
   onCancel
 }) => {
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('Từ Vựng Mới');
-  const [description, setDescription] = useState('');
+  const isEditing = Boolean(initialLesson);
+
+  const [title, setTitle] = useState(initialLesson?.title || '');
+  const [category, setCategory] = useState(initialLesson?.category || 'Từ Vựng Mới');
+  const [description, setDescription] = useState(initialLesson?.description || '');
 
   // 1. Ô nhập Situations
-  const [situationsText, setSituationsText] = useState(
-`Yêu cầu giúp đỡ khi bị lạc đường
-Xin lỗi vì không thể tham gia buổi tiệc
-Hỏi thông tin về giá phòng khách sạn
-Đề xuất thay đổi lịch hẹn sang ngày khác`
-  );
+  const [situationsText, setSituationsText] = useState(() => {
+    if (initialLesson?.situationPairs && initialLesson.situationPairs.length > 0) {
+      return initialLesson.situationPairs.map(s => s.situation).join('\n');
+    }
+    return DEFAULT_SITUATIONS;
+  });
 
   // 2. Ô nhập Target Phrases
-  const [phrasesText, setPhrasesText] = useState(
-`ask for directions
-decline an invitation
-inquire about room rates
-reschedule an appointment`
-  );
+  const [phrasesText, setPhrasesText] = useState(() => {
+    if (initialLesson?.situationPairs && initialLesson.situationPairs.length > 0) {
+      return initialLesson.situationPairs.map(s => s.targetPhrase).join('\n');
+    }
+    return DEFAULT_PHRASES;
+  });
 
   // 3. Ô nhập Dialogue
-  const [dialogueText, setDialogueText] = useState(
-`Customer: Good morning! I would like to [inquire about room rates] for next weekend.
-Receptionist: Sure! Our standard room is $80/night. Would you like to make a reservation?
-Customer: Thank you, but I need to [reschedule an appointment] first with my client before confirming.
-Receptionist: No problem! Feel free to call us whenever you are ready.`
-  );
+  const [dialogueText, setDialogueText] = useState(() => {
+    if (initialLesson) {
+      return getInitialDialogueText(initialLesson);
+    }
+    return DEFAULT_DIALOGUE;
+  });
 
   // 4. Ô nhập các Đáp án ngẫu nhiên / Đáp án bổ sung
-  const [answersText, setAnswersText] = useState(
-`inquire about room rates, reschedule an appointment, ask for directions, decline an invitation, order food, pay by card`
-  );
+  const [answersText, setAnswersText] = useState(() => {
+    if (initialLesson?.rawAnswers && initialLesson.rawAnswers.length > 0) {
+      return initialLesson.rawAnswers.join(', ');
+    }
+    return DEFAULT_ANSWERS;
+  });
 
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -79,7 +132,7 @@ Receptionist: No problem! Feel free to call us whenever you are ready.`
     }
 
     try {
-      const newLesson = parseRawInputsToLesson(
+      const savedLesson = parseRawInputsToLesson(
         title.trim(),
         category.trim(),
         description.trim(),
@@ -89,11 +142,17 @@ Receptionist: No problem! Feel free to call us whenever you are ready.`
         answersText
       );
 
-      saveLessonSet(newLesson);
+      if (initialLesson) {
+        savedLesson.id = initialLesson.id;
+        savedLesson.createdAt = initialLesson.createdAt;
+        savedLesson.isPreMade = initialLesson.isPreMade;
+      }
+
+      saveLessonSet(savedLesson);
       sound.playCorrect();
-      onSaveSuccess(newLesson);
+      onSaveSuccess(savedLesson);
     } catch {
-      setErrorMsg('Đã xảy ra lỗi khi tạo bài học. Vui lòng kiểm tra lại định dạng dữ liệu.');
+      setErrorMsg('Đã xảy ra lỗi khi lưu bài học. Vui lòng kiểm tra lại định dạng dữ liệu.');
     }
   };
 
@@ -141,13 +200,15 @@ Candidate: It matters a lot. I always look for a place with a [cozy ambience] wh
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 mb-6">
           <div>
             <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider">
-              Soạn Bài Học Cá Nhân
+              {isEditing ? 'Chỉnh Sửa Bài Học' : 'Soạn Bài Học Cá Nhân'}
             </span>
             <h1 className="text-2xl font-bold text-slate-800 mt-1">
-              Tạo Ôn Tập Bài Học Mới
+              {isEditing ? `Chỉnh Sửa: ${initialLesson.title}` : 'Tạo Ôn Tập Bài Học Mới'}
             </h1>
             <p className="text-sm text-slate-600 mt-0.5">
-              Nhập Situations, Target Phrases và Dialogue để tự động tạo 2 trò chơi tương tác.
+              {isEditing 
+                ? 'Cập nhật lại thông tin, Situations, Target Phrases và Dialogue cho bài học này.' 
+                : 'Nhập Situations, Target Phrases và Dialogue để tự động tạo 2 trò chơi tương tác.'}
             </p>
           </div>
 

@@ -5,6 +5,7 @@ import {
   MessageSquare, 
   PlusCircle, 
   Trash2, 
+  Pencil,
   Sparkles, 
   BookOpen, 
   Clock, 
@@ -19,6 +20,7 @@ interface LessonListProps {
   lessons: LessonSet[];
   onSelectLesson: (lesson: LessonSet, mode: 'matching' | 'dialogue') => void;
   onCreateNew: () => void;
+  onEditLesson: (lesson: LessonSet) => void;
   onRefreshLessons: () => void;
 }
 
@@ -26,6 +28,7 @@ export const LessonList: React.FC<LessonListProps> = ({
   lessons,
   onSelectLesson,
   onCreateNew,
+  onEditLesson,
   onRefreshLessons
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -118,15 +121,31 @@ export const LessonList: React.FC<LessonListProps> = ({
                   {lesson.category}
                 </span>
 
-                {!lesson.isPreMade && (
+                <div className="flex items-center gap-1">
                   <button
-                    onClick={(e) => handleDelete(e, lesson.id)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                    title="Xóa bộ bài học này"
+                    id={`btn-edit-lesson-${lesson.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      sound.playClick();
+                      onEditLesson(lesson);
+                    }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    title="Chỉnh sửa bài học này"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Pencil className="w-4 h-4" />
                   </button>
-                )}
+
+                  {!lesson.isPreMade && (
+                    <button
+                      id={`btn-delete-lesson-${lesson.id}`}
+                      onClick={(e) => handleDelete(e, lesson.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                      title="Xóa bộ bài học này"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Title & Description */}

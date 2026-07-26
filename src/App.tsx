@@ -12,6 +12,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('lessons');
   const [lessons, setLessons] = useState<LessonSet[]>([]);
   const [selectedLesson, setSelectedLesson] = useState<LessonSet | null>(null);
+  const [editingLesson, setEditingLesson] = useState<LessonSet | null>(null);
 
   // Load stored lessons on mount
   useEffect(() => {
@@ -34,7 +35,18 @@ export default function App() {
   const handleLessonSaved = (newLesson: LessonSet) => {
     refreshLessons();
     setSelectedLesson(newLesson);
+    setEditingLesson(null);
     setActiveTab('matching');
+  };
+
+  const handleEditLesson = (lesson: LessonSet) => {
+    setEditingLesson(lesson);
+    setActiveTab('create');
+  };
+
+  const handleCreateNewLesson = () => {
+    setEditingLesson(null);
+    setActiveTab('create');
   };
 
   const handlePlayAgainFromHistory = (lessonId: string, gameType: 'matching' | 'dialogue') => {
@@ -53,7 +65,12 @@ export default function App() {
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => {
+          if (tab === 'create') {
+            setEditingLesson(null);
+          }
+          setActiveTab(tab);
+        }}
         selectedLessonTitle={selectedLesson?.title}
       />
 
@@ -63,7 +80,8 @@ export default function App() {
           <LessonList
             lessons={lessons}
             onSelectLesson={handleSelectLesson}
-            onCreateNew={() => setActiveTab('create')}
+            onCreateNew={handleCreateNewLesson}
+            onEditLesson={handleEditLesson}
             onRefreshLessons={refreshLessons}
           />
         )}
@@ -86,8 +104,13 @@ export default function App() {
 
         {activeTab === 'create' && (
           <LessonEditor
+            key={editingLesson ? editingLesson.id : 'new-lesson'}
+            initialLesson={editingLesson}
             onSaveSuccess={handleLessonSaved}
-            onCancel={() => setActiveTab('lessons')}
+            onCancel={() => {
+              setEditingLesson(null);
+              setActiveTab('lessons');
+            }}
           />
         )}
 
