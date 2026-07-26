@@ -1,0 +1,6 @@
+{
+  "name": "VocabReview - Ôn Tập Từ Vựng Interactive",
+  "description": "Ứng dụng ôn tập từ vựng tiếng Anh qua game Nối Cột Situations - Target Phrases và Kéo Thả Dialogue với chấm điểm, giải thích & lịch sử học tập.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
