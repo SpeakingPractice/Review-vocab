@@ -129,16 +129,17 @@ export function parseRawInputsToLesson(
     };
   });
 
-  // Parse raw answers cleanly without modifying entries
-  const rawAnswers = answersText
+  // Parse raw answers strictly by line (newline separated) and deduplicate answers
+  const seenAnswers = new Set<string>();
+  const rawAnswers: string[] = [];
+  answersText
     .split('\n')
-    .flatMap(line => {
-      const trimmedLine = line.trim();
-      if (!trimmedLine) return [];
-      if (trimmedLine.includes(',')) {
-        return trimmedLine.split(',').map(a => a.trim()).filter(Boolean);
+    .forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && !seenAnswers.has(trimmed.toLowerCase())) {
+        seenAnswers.add(trimmed.toLowerCase());
+        rawAnswers.push(trimmed);
       }
-      return [trimmedLine];
     });
 
   // Parse dialogue lines and extract [blank] placeholders
@@ -175,8 +176,16 @@ export function parseRawInputsToLesson(
         correctAnswer = rawAnswers[blankCounter - 2] || 'answer';
       }
 
-      // Build options purely from user input (rawAnswers or correctAnswer) without adding dummy options
-      const blankOptions = Array.from(new Set([correctAnswer, ...rawAnswers]));
+      // Build options purely from user input (rawAnswers or correctAnswer) without adding dummy options or duplicates
+      const optionsSeen = new Set<string>();
+      const blankOptions: string[] = [];
+      [correctAnswer, ...rawAnswers].forEach(opt => {
+        const trimmed = opt.trim();
+        if (trimmed && !optionsSeen.has(trimmed.toLowerCase())) {
+          optionsSeen.add(trimmed.toLowerCase());
+          blankOptions.push(trimmed);
+        }
+      });
 
       dialogueBlanks[blankKey] = {
         id: blankKey,

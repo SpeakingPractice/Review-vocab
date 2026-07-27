@@ -36,7 +36,12 @@ Receptionist: Sure! Our standard room is $80/night. Would you like to make a res
 Customer: Thank you, but I need to [reschedule an appointment] first with my client before confirming.
 Receptionist: No problem! Feel free to call us whenever you are ready.`;
 
-const DEFAULT_ANSWERS = `inquire about room rates, reschedule an appointment, ask for directions, decline an invitation, order food, pay by card`;
+const DEFAULT_ANSWERS = `inquire about room rates
+reschedule an appointment
+ask for directions
+decline an invitation
+order food
+pay by card`;
 
 function getInitialDialogueText(lesson: LessonSet): string {
   let text = lesson.rawDialogue || '';
@@ -105,7 +110,14 @@ export const LessonEditor: React.FC<LessonEditorProps> = ({
   // 4. Ô nhập các Đáp án ngẫu nhiên / Đáp án bổ sung
   const [answersText, setAnswersText] = useState(() => {
     if (initialLesson?.rawAnswers && initialLesson.rawAnswers.length > 0) {
-      return initialLesson.rawAnswers.join(', ');
+      const seen = new Set<string>();
+      const unique = initialLesson.rawAnswers.filter(a => {
+        const lower = a.trim().toLowerCase();
+        if (!lower || seen.has(lower)) return false;
+        seen.add(lower);
+        return true;
+      });
+      return unique.join('\n');
     }
     return DEFAULT_ANSWERS;
   });
@@ -337,13 +349,13 @@ Candidate: It matters a lot. I always look for a place with a [cozy ambience] wh
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Ô 4: Nhập Danh Sách Đáp Án Có Sẵn (Dấu phẩy hoặc xuống dòng)
+                  Ô 4: Nhập Danh Sách Đáp Án Có Sẵn (Mỗi đáp án 1 dòng)
                 </label>
                 <textarea
                   rows={6}
                   value={answersText}
                   onChange={e => setAnswersText(e.target.value)}
-                  placeholder="check in, check out, room upgrade, late checkout"
+                  placeholder="check in&#10;check out&#10;room upgrade&#10;late checkout"
                   className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-mono leading-relaxed"
                 />
               </div>

@@ -395,55 +395,7 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
         })}
       </div>
 
-      {/* Available Answer Options Pool */}
-      {!isSubmitted && (
-        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm mb-6">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-600" />
-              Danh Sách Đáp Án Có Sẵn ({optionPool.length} từ/cụm từ)
-            </h3>
-            {selectedOption && (
-              <span className="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2.5 py-1 rounded-lg">
-                Đã chọn: "{selectedOption}" (Hãy bấm vào 1 ô trống ở trên)
-              </span>
-            )}
-          </div>
 
-          <div className="flex flex-wrap gap-2 min-h-[60px] p-3 rounded-2xl bg-slate-50 border border-slate-200/60 items-center">
-            {optionPool.length === 0 ? (
-              <p className="text-xs text-slate-400 italic w-full text-center">
-                Chưa có đáp án nào.
-              </p>
-            ) : (
-              optionPool.map((opt, idx) => {
-                const isSelected = selectedOption === opt;
-                const isUsed = Object.values(userAnswers).includes(opt);
-                return (
-                  <button
-                    key={`${opt}-${idx}`}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, opt)}
-                    onClick={() => handleOptionClick(opt)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold font-mono border shadow-sm transition-all duration-150 flex items-center gap-1.5 ${
-                      isSelected
-                        ? 'border-indigo-600 bg-indigo-600 text-white scale-105 shadow-md'
-                        : isUsed
-                        ? 'border-slate-200 bg-slate-100 text-slate-400'
-                        : 'border-slate-200 bg-white text-slate-800 hover:border-indigo-400 hover:bg-indigo-50/50'
-                    }`}
-                  >
-                    <span className="text-[10px] px-1.5 py-0.2 bg-slate-200/60 rounded text-slate-600 font-bold">
-                      {idx + 1}
-                    </span>
-                    {opt}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Pop-Up Modal for Selecting Option */}
       <AnimatePresence>
