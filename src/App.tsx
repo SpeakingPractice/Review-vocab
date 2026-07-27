@@ -52,7 +52,7 @@ export default function App() {
     refreshLessons();
     setSelectedLesson(newLesson);
     setEditingLesson(null);
-    setActiveTab('matching');
+    setActiveTab('lessons');
   };
 
   const handleEditLesson = (lesson: LessonSet) => {

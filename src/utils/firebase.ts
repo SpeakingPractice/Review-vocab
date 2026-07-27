@@ -46,23 +46,38 @@ const LOCAL_STORAGE_KEY = 'vocab_review_lessons_v1';
  */
 
 export function mergeLessonsWithSamples(remoteLessons: LessonSet[]): LessonSet[] {
-  const customMap = new Map<string, LessonSet>();
+  const mergedMap = new Map<string, LessonSet>();
   
-  remoteLessons.forEach(l => {
-    customMap.set(l.id, l);
+  // 1. Default sample lessons
+  SAMPLE_LESSONS.forEach(sample => {
+    mergedMap.set(sample.id, sample);
   });
 
-  // Ensure default sample lessons are included
-  const merged: LessonSet[] = [...remoteLessons];
-  const existingIds = new Set(remoteLessons.map(l => l.id));
+  // 2. Local storage custom lessons
+  try {
+    const rawLocal = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (rawLocal) {
+      const parsedLocal: LessonSet[] = JSON.parse(rawLocal);
+      parsedLocal.forEach(l => {
+        if (l && l.id) {
+          mergedMap.set(l.id, l);
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Failed reading local storage in merge:', e);
+  }
 
-  SAMPLE_LESSONS.forEach(sample => {
-    if (!existingIds.has(sample.id)) {
-      merged.push(sample);
+  // 3. Remote Firestore lessons
+  remoteLessons.forEach(l => {
+    if (l && l.id) {
+      mergedMap.set(l.id, l);
     }
   });
 
-  return merged;
+  return Array.from(mergedMap.values()).sort((a, b) => 
+    (b.createdAt || '').localeCompare(a.createdAt || '')
+  );
 }
 
 /**
