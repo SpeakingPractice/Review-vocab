@@ -105,6 +105,14 @@ export function computeUserStats(historyList?: GameHistoryRecord[]): UserStats {
   };
 }
 
+/**
+ * Normalizes answer strings by trimming whitespace and removing trailing punctuation (. ? ! , ;)
+ */
+export function normalizeAnswer(str: string): string {
+  if (!str) return '';
+  return str.trim().replace(/[.?!,;:]+$/, '').trim();
+}
+
 // Parsing Utilities for inputs
 export function parseRawInputsToLesson(
   title: string,
@@ -120,7 +128,7 @@ export function parseRawInputsToLesson(
   const phraseLines = phrasesText.split('\n').map(l => l.trim()).filter(Boolean);
 
   const situationPairs = sitLines.map((sit, idx) => {
-    const phrase = phraseLines[idx] || `Target Phrase ${idx + 1}`;
+    const phrase = normalizeAnswer(phraseLines[idx] || `Target Phrase ${idx + 1}`);
     return {
       id: `sp-${Date.now()}-${idx}`,
       situation: sit,
@@ -129,16 +137,16 @@ export function parseRawInputsToLesson(
     };
   });
 
-  // Parse raw answers strictly by line (newline separated) and deduplicate answers
+  // Parse raw answers strictly by line (newline separated) and deduplicate answers after normalization
   const seenAnswers = new Set<string>();
   const rawAnswers: string[] = [];
   answersText
     .split('\n')
     .forEach(line => {
-      const trimmed = line.trim();
-      if (trimmed && !seenAnswers.has(trimmed.toLowerCase())) {
-        seenAnswers.add(trimmed.toLowerCase());
-        rawAnswers.push(trimmed);
+      const clean = normalizeAnswer(line);
+      if (clean && !seenAnswers.has(clean.toLowerCase())) {
+        seenAnswers.add(clean.toLowerCase());
+        rawAnswers.push(clean);
       }
     });
 
@@ -159,31 +167,33 @@ export function parseRawInputsToLesson(
     }
 
     // Auto convert bracketed answers like [word] or ___ to [blank_N]
-    // If the content explicitly contains brackets with words e.g. "I want to [check in]", we extract "check in" as correct answer!
     const blankIdsInLine: string[] = [];
     const regex = /\[(.*?)\]/g;
     let match;
     let processedContent = content;
 
     while ((match = regex.exec(content)) !== null) {
-      const matchedText = match[1].trim(); // answer inside brackets or e.g. "blank_1"
+      const matchedInside = match[1].trim(); // answer inside brackets
+      const trailingPunctuation = matchedInside.match(/[.?!,;:]+$/)?.[0] || '';
+      const cleanMatched = normalizeAnswer(matchedInside);
+
       const blankKey = `blank_${blankCounter}`;
       blankCounter++;
 
-      // If matchedText is a target word or phrase
-      let correctAnswer = matchedText;
-      if (matchedText.startsWith('blank_') || matchedText === '' || matchedText === '___') {
-        correctAnswer = rawAnswers[blankCounter - 2] || 'answer';
+      // If matchedInside is a target word or phrase
+      let correctAnswer = cleanMatched;
+      if (cleanMatched.startsWith('blank_') || cleanMatched === '' || cleanMatched === '___') {
+        correctAnswer = normalizeAnswer(rawAnswers[blankCounter - 2] || 'answer');
       }
 
-      // Build options purely from user input (rawAnswers or correctAnswer) without adding dummy options or duplicates
+      // Build options purely from user input without adding dummy options or duplicates
       const optionsSeen = new Set<string>();
       const blankOptions: string[] = [];
       [correctAnswer, ...rawAnswers].forEach(opt => {
-        const trimmed = opt.trim();
-        if (trimmed && !optionsSeen.has(trimmed.toLowerCase())) {
-          optionsSeen.add(trimmed.toLowerCase());
-          blankOptions.push(trimmed);
+        const clean = normalizeAnswer(opt);
+        if (clean && !optionsSeen.has(clean.toLowerCase())) {
+          optionsSeen.add(clean.toLowerCase());
+          blankOptions.push(clean);
         }
       });
 
@@ -194,7 +204,8 @@ export function parseRawInputsToLesson(
         explanation: `Từ/Cụm từ đúng trong ngữ cảnh này là "${correctAnswer}".`
       };
 
-      processedContent = processedContent.replace(match[0], `[${blankKey}]`);
+      // Keep trailing punctuation outside the bracket placeholder in processedContent
+      processedContent = processedContent.replace(match[0], `[${blankKey}]${trailingPunctuation}`);
       blankIdsInLine.push(blankKey);
     }
 

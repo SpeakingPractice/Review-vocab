@@ -526,7 +526,7 @@ export const MatchingGame: React.FC<MatchingGameProps> = ({
                       <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
                         {String.fromCharCode(65 + index)}
                       </span>
-                      <span className="text-base font-semibold text-indigo-950 font-mono">
+                      <span className="text-sm font-bold text-slate-800 leading-snug">
                         {item.targetPhrase}
                       </span>
                     </div>

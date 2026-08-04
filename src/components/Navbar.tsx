@@ -1,15 +1,13 @@
 import React from 'react';
 import { 
   BookOpen, 
-  Gamepad2, 
   PlusCircle, 
   BarChart3, 
-  Sparkles,
-  MessageSquare
+  BookMarked
 } from 'lucide-react';
 import { sound } from '../utils/sound';
 
-export type TabType = 'lessons' | 'matching' | 'dialogue' | 'create' | 'history';
+export type TabType = 'lessons' | 'vocab' | 'matching' | 'dialogue' | 'create' | 'history';
 
 interface NavbarProps {
   activeTab: TabType;
@@ -19,8 +17,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
-  setActiveTab,
-  selectedLessonTitle
+  setActiveTab
 }) => {
   const handleTabClick = (tab: TabType) => {
     sound.playClick();
@@ -47,7 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs - Exactly 4 items: Bài Học, Soạn Bài Mới, Tiến Độ, Kho Từ Vựng */}
         <nav className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-2xl border border-slate-200/60 overflow-x-auto no-scrollbar">
           <button
             id="tab-lessons"
@@ -59,34 +56,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <BookOpen className="w-4 h-4 text-indigo-600" />
-            <span className="hidden sm:inline">Kho Bài Học</span>
-            <span className="sm:hidden">Bài Học</span>
+            <span>Bài Học</span>
           </button>
 
           <button
-            id="tab-matching"
-            onClick={() => handleTabClick('matching')}
+            id="tab-vocab"
+            onClick={() => handleTabClick('vocab')}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
-              activeTab === 'matching'
+              activeTab === 'vocab'
                 ? 'bg-white text-indigo-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
             }`}
           >
-            <Gamepad2 className="w-4 h-4 text-indigo-600" />
-            <span>Game Nối Cột</span>
-          </button>
-
-          <button
-            id="tab-dialogue"
-            onClick={() => handleTabClick('dialogue')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
-              activeTab === 'dialogue'
-                ? 'bg-white text-indigo-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4 text-emerald-600" />
-            <span>Game Dialogue</span>
+            <BookMarked className="w-4 h-4 text-indigo-600" />
+            <span>Kho Từ Vựng</span>
           </button>
 
           <button
@@ -112,8 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <BarChart3 className="w-4 h-4 text-amber-600" />
-            <span className="hidden sm:inline">Tiến Độ & Lịch Sử</span>
-            <span className="sm:hidden">Tiến Độ</span>
+            <span>Tiến Độ</span>
           </button>
         </nav>
       </div>

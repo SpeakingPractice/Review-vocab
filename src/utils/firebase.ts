@@ -75,9 +75,11 @@ export function mergeLessonsWithSamples(remoteLessons: LessonSet[]): LessonSet[]
     }
   });
 
-  return Array.from(mergedMap.values()).sort((a, b) => 
-    (b.createdAt || '').localeCompare(a.createdAt || '')
-  );
+  return Array.from(mergedMap.values())
+    .filter(l => l.id !== 'sample-business-1' && l.id !== 'sample-travel-2')
+    .sort((a, b) => 
+      (b.createdAt || '').localeCompare(a.createdAt || '')
+    );
 }
 
 /**

@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { LessonSet, GameHistoryRecord } from '../types';
 import { sound } from '../utils/sound';
-import { addGameHistory, shuffleArray } from '../utils/storage';
+import { addGameHistory, shuffleArray, normalizeAnswer } from '../utils/storage';
 
 interface DialogueGameProps {
   lesson: LessonSet;
@@ -76,21 +76,22 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
     setTimerActive(true);
     setShowExplanation(false);
 
-    // Collect options strictly based on user input (rawAnswers or blanks)
-    const blanksList = Object.values(lesson.dialogueBlanks) as Array<{ correctAnswer: string }>;
-    const allCorrectAnswers = blanksList.map((b) => b.correctAnswer);
-    const rawAnswersList = lesson.rawAnswers || [];
+    // Collect options strictly based on user input, normalized and deduplicated
+    const blanksList = Object.values(lesson.dialogueBlanks || {}) as Array<{ correctAnswer: string }>;
+    const allCorrectAnswers = blanksList.map((b) => normalizeAnswer(b.correctAnswer)).filter(Boolean);
+    const rawAnswersList = (lesson.rawAnswers || []).map(normalizeAnswer).filter(Boolean);
 
-    let pool: string[];
-    if (rawAnswersList.length > 0) {
-      // Use exact list provided in rawAnswers. If any blank answer was omitted from rawAnswers, append it to avoid broken blanks.
-      const missingCorrect = allCorrectAnswers.filter(
-        ans => !rawAnswersList.some(r => r.trim().toLowerCase() === ans.trim().toLowerCase())
-      );
-      pool = [...rawAnswersList, ...missingCorrect];
-    } else {
-      pool = allCorrectAnswers;
-    }
+    const seenKeys = new Set<string>();
+    const pool: string[] = [];
+
+    [...rawAnswersList, ...allCorrectAnswers].forEach(item => {
+      const clean = normalizeAnswer(item);
+      const key = clean.toLowerCase();
+      if (clean && !seenKeys.has(key)) {
+        seenKeys.add(key);
+        pool.push(clean);
+      }
+    });
 
     setOptionPool(shuffleArray(pool));
   };
@@ -176,14 +177,16 @@ export const DialogueGame: React.FC<DialogueGameProps> = ({
     let correctCount = 0;
     const details = blankKeys.map(blankId => {
       const blankObj = lesson.dialogueBlanks[blankId];
-      const userVal = userAnswers[blankId] || 'Bỏ trống';
-      const isCorrect = userVal.toLowerCase().trim() === blankObj.correctAnswer.toLowerCase().trim();
+      const userValRaw = userAnswers[blankId] || 'Bỏ trống';
+      const userVal = normalizeAnswer(userValRaw);
+      const correctVal = normalizeAnswer(blankObj.correctAnswer || '');
+      const isCorrect = userVal.toLowerCase() === correctVal.toLowerCase();
 
       if (isCorrect) correctCount++;
 
       return {
         item: `Ô trống (${blankId})`,
-        userAnswer: userVal,
+        userAnswer: userValRaw,
         correctAnswer: blankObj.correctAnswer,
         isCorrect,
         explanation: blankObj.explanation

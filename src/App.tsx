@@ -7,6 +7,7 @@ import { MatchingGame } from './components/MatchingGame';
 import { DialogueGame } from './components/DialogueGame';
 import { LessonEditor } from './components/LessonEditor';
 import { HistoryStats } from './components/HistoryStats';
+import { VocabBank } from './components/VocabBank';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('lessons');
@@ -99,6 +100,13 @@ export default function App() {
             onCreateNew={handleCreateNewLesson}
             onEditLesson={handleEditLesson}
             onRefreshLessons={refreshLessons}
+          />
+        )}
+
+        {activeTab === 'vocab' && (
+          <VocabBank
+            lessons={lessons}
+            onSelectLesson={handleSelectLesson}
           />
         )}
 

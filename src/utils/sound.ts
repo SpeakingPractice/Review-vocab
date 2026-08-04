@@ -104,6 +104,18 @@ class SoundManager {
     osc.stop(now + 0.08);
   }
 
+  // Text to speech for English pronunciation
+  public speakEnglish(text: string) {
+    if (!text || this.isMuted) return;
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel(); // Stop ongoing speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+
   // Victory Fanfare
   public playVictory() {
     const ctx = this.getContext();
